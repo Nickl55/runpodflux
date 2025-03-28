@@ -6,6 +6,12 @@ import io
 from huggingface_hub import login
 # Log in using the Hugging Face token if necessary
 login(token='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')
+# Define the network volume path for serverless
+NETWORK_VOLUME_PATH = "/runpod-volume"
+
+# Set environment variables to use the network volume for model caching
+os.environ["HF_HOME"] = f"{NETWORK_VOLUME_PATH}/hf-cache"
+os.environ["TRANSFORMERS_CACHE"] = f"{NETWORK_VOLUME_PATH}/hf-cache"
 
 # Initialize the FluxPipeline model once when the handler starts
 pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-dev", torch_dtype=torch.bfloat16, use_auth_token=True)
