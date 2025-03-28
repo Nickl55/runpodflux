@@ -1,20 +1,17 @@
-# Use a Python base image
+# Use an official Python runtime as a base image
 FROM python:3.9-slim
 
-# Set environment variables
-ENV PYTHONUNBUFFERED 1
-
-# Create a directory for the application
+# Set the working directory inside the container
 WORKDIR /app
 
+# Copy the current directory contents into the container at /app
+COPY . /app
+
+# Upgrade pip to the latest version
+RUN pip install --upgrade pip
+
 # Install necessary dependencies
-RUN pip install --no-cache-dir transformers runpod flask
+RUN pip install torch diffusers runpod Pillow
 
-# Copy the handler.py into the container
-COPY handler.py /app/
-
-# Expose the port for HTTP server if needed (for local testing)
-EXPOSE 8080
-
-# Start the RunPod serverless service
+# Command to run the handler when the container starts
 CMD ["python", "handler.py"]

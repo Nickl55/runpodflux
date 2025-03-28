@@ -1,44 +1,52 @@
 import runpod
-import json
-from transformers import pipeline
+import torch
+from diffusers import FluxPipeline
+from PIL import Image
+import io
 
-# Initialize the Hugging Face image generation pipeline
-image_gen_pipeline = pipeline("image-generation", model="black-forest-labs/FLUX.1-dev")
+# Initialize the FluxPipeline model once when the handler starts
+pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-dev", torch_dtype=torch.bfloat16)
+pipe.enable_model_cpu_offload()  # Enable CPU offloading to save VRAM (can be removed if enough GPU memory)
 
+# Define the handler function
 def handler(event):
-    # Extract input from the event
-    input_data = event.get('input', {})
-    prompt = input_data.get('prompt')
-    seconds = input_data.get('seconds', 0)  # Optional processing time, if you want to simulate delay
+    input_data = event['input']
+    prompt = input_data.get('prompt', 'A beautiful sunset over the ocean')  # Default prompt if not provided
+    
 
-    # Check if a prompt is provided
-    if not prompt:
-        return {
-            'statusCode': 400,
-            'body': json.dumps({'error': 'Prompt is required'})
-        }
-
-    # Simulate processing time if provided
-    time.sleep(seconds)
 
     try:
-        # Generate image using the FLUX.1-dev model
-        generated_image = image_gen_pipeline(prompt)
-        image_url = generated_image[0]["url"]  # Assuming the model's output contains a URL
+        # Generate the image based on the provided prompt
+        image = pipe(
+            prompt,
+            height=1024,
+            width=1024,
+            guidance_scale=3.5,
+            num_inference_steps=50,
+            max_sequence_length=512,
+            generator=torch.Generator("cpu").manual_seed(0)  # Optional: Seed for reproducibility
+        ).images[0]  # Get the first image in the response
 
-        # Return the image URL as the response
+        # Convert the image to bytes to send as part of the response
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format="PNG")
+        img_byte_arr = img_byte_arr.getvalue()
+
+        # Return the image as a base64-encoded string or a direct image blob
         return {
             'statusCode': 200,
-            'body': json.dumps({'image_url': image_url})
+            'body': img_byte_arr,
+            'headers': {
+                'Content-Type': 'application/octet-stream',
+                'Content-Disposition': 'attachment; filename="generated_image.png"'
+            }
         }
 
     except Exception as e:
-        # Return an error if something goes wrong
         return {
             'statusCode': 500,
-            'body': json.dumps({'error': f'Error generating image: {str(e)}'})
+            'body': str(e)
         }
 
 if __name__ == '__main__':
-    # Start the RunPod serverless service
     runpod.serverless.start({'handler': handler})
