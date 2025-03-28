@@ -4,6 +4,7 @@ from diffusers import FluxPipeline
 from PIL import Image
 import io
 from huggingface_hub import login
+import os
 # Log in using the Hugging Face token if necessary
 login(token='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')
 # Define the network volume path for serverless
