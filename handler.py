@@ -1,47 +1,44 @@
-import os
+import runpod
 import json
 from transformers import pipeline
 
-# Initialize the model once to avoid reloading for every request.
-# If using a different model, you can adjust this pipeline accordingly.
+# Initialize the Hugging Face image generation pipeline
 image_gen_pipeline = pipeline("image-generation", model="black-forest-labs/FLUX.1-dev")
 
-def handler(event, context):
-    """
-    This function will be triggered by the serverless endpoint.
-    It will process the incoming event and generate an image.
-    """
-    
-    # Parse input data from event
-    try:
-        body = json.loads(event['body'])
-        prompt = body.get('prompt', None)
-        if not prompt:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'Prompt is required'})
-            }
-    except Exception as e:
+def handler(event):
+    # Extract input from the event
+    input_data = event.get('input', {})
+    prompt = input_data.get('prompt')
+    seconds = input_data.get('seconds', 0)  # Optional processing time, if you want to simulate delay
+
+    # Check if a prompt is provided
+    if not prompt:
         return {
             'statusCode': 400,
-            'body': json.dumps({'error': f'Error parsing the input: {str(e)}'})
+            'body': json.dumps({'error': 'Prompt is required'})
         }
-    
-    # Generate the image using the model
+
+    # Simulate processing time if provided
+    time.sleep(seconds)
+
     try:
+        # Generate image using the FLUX.1-dev model
         generated_image = image_gen_pipeline(prompt)
-        
-        # Assuming the model returns a list of images in some form
-        image_url = generated_image[0]["url"]
-        
-        # Return the image URL or base64 encoded image data (depending on the model's output)
+        image_url = generated_image[0]["url"]  # Assuming the model's output contains a URL
+
+        # Return the image URL as the response
         return {
             'statusCode': 200,
             'body': json.dumps({'image_url': image_url})
         }
+
     except Exception as e:
+        # Return an error if something goes wrong
         return {
             'statusCode': 500,
             'body': json.dumps({'error': f'Error generating image: {str(e)}'})
         }
 
+if __name__ == '__main__':
+    # Start the RunPod serverless service
+    runpod.serverless.start({'handler': handler})
