@@ -3,9 +3,12 @@ import torch
 from diffusers import FluxPipeline
 from PIL import Image
 import io
+from huggingface_hub import login
+# Log in using the Hugging Face token if necessary
+login(token='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')
 
 # Initialize the FluxPipeline model once when the handler starts
-pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-dev", torch_dtype=torch.bfloat16)
+pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-dev", torch_dtype=torch.bfloat16, use_auth_token=True)
 pipe.enable_model_cpu_offload()  # Enable CPU offloading to save VRAM (can be removed if enough GPU memory)
 
 # Define the handler function
