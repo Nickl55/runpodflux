@@ -11,7 +11,7 @@ COPY . /app
 RUN pip install --upgrade pip
 
 # Install necessary dependencies
-RUN pip install torch diffusers runpod Pillow
+RUN pip install torch diffusers transformers runpod Pillow
 
 # Command to run the handler when the container starts
 CMD ["python", "handler.py"]
